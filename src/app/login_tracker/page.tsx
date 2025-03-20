@@ -69,7 +69,7 @@ export default function Login() {
       >
         <h2 className="text-3xl font-bold text-center mb-6 text-gray-800">Welcome Back!</h2>
         <p className="text-center text-gray-600 mb-8">
-          Please log in to access your inventory dashboard.
+          Please log in to access your  dashboard.
         </p>
 
         <form onSubmit={handleLogin} className="space-y-6">
