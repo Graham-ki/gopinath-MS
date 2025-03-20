@@ -19,7 +19,7 @@ interface ImageProps {
 
 function Image(props: ImageProps) {
   return (
-    <Image
+    <img
       src={props.src}
       alt={props.alt}
       width={props.width}
@@ -599,6 +599,7 @@ function DetailsModal({ entry, closeModal, refresh, openFuelUsageModal }: Detail
 // **Fuel Usage Modal**
 function FuelUsageModal({ entry, closeModal, refresh }: FuelUsageModalProps) {
   const [fuelUsed, setFuelUsed] = useState<string>();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
