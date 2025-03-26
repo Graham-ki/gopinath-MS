@@ -9,47 +9,6 @@
 export type Database = {
   public: {
     Tables: {
-      inventory: {
-        Row: {
-          category: string | null
-          created_at: string | null
-          description: string | null
-          id: string
-          name: string
-          quantity: number
-          supplier_id: string | null
-          unit_price: number | null
-        }
-        Insert: {
-          category?: string | null
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          name: string
-          quantity?: number
-          supplier_id?: string | null
-          unit_price?: number | null
-        }
-        Update: {
-          category?: string | null
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          name?: string
-          quantity?: number
-          supplier_id?: string | null
-          unit_price?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "inventory_supplier_id_fkey"
-            columns: ["supplier_id"]
-            isOneToOne: false
-            referencedRelation: "suppliers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       proofs: {
         Row: {
           created_at: string
@@ -71,37 +30,62 @@ export type Database = {
         }
         Relationships: []
       }
-      sales: {
+      stock_items: {
         Row: {
-          customer_name: string
+          cost: string | null
+          created_at: string
+          GRN: string | null
           id: number
-          item_id: string | null
-          quantity: number
-          sale_date: string | null
+          LPO: string | null
+          name: string | null
+          quantity: string | null
         }
         Insert: {
-          customer_name: string
+          cost?: string | null
+          created_at?: string
+          GRN?: string | null
           id?: number
-          item_id?: string | null
-          quantity: number
-          sale_date?: string | null
+          LPO?: string | null
+          name?: string | null
+          quantity?: string | null
         }
         Update: {
-          customer_name?: string
+          cost?: string | null
+          created_at?: string
+          GRN?: string | null
           id?: number
-          item_id?: string | null
-          quantity?: number
-          sale_date?: string | null
+          LPO?: string | null
+          name?: string | null
+          quantity?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "sales_item_id_fkey"
-            columns: ["item_id"]
-            isOneToOne: false
-            referencedRelation: "inventory"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
+      }
+      stock_out: {
+        Row: {
+          created_at: string
+          id: number
+          issuedby: string | null
+          name: string | null
+          quantity: string | null
+          takenby: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          issuedby?: string | null
+          name?: string | null
+          quantity?: string | null
+          takenby?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          issuedby?: string | null
+          name?: string | null
+          quantity?: string | null
+          takenby?: string | null
+        }
+        Relationships: []
       }
       suppliers: {
         Row: {
@@ -153,13 +137,6 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "transactions_inventory_id_fkey"
-            columns: ["inventory_id"]
-            isOneToOne: false
-            referencedRelation: "inventory"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "transactions_user_id_fkey"
             columns: ["user_id"]
@@ -226,7 +203,8 @@ export type Database = {
           destination: string
           fuel_used: number | null
           id: string
-          mileage: string | null
+          item: string | null
+          mileage: number | null
           route: string
           vehicle_number: string
         }
@@ -238,7 +216,8 @@ export type Database = {
           destination: string
           fuel_used?: number | null
           id?: string
-          mileage?: string | null
+          item?: string | null
+          mileage?: number | null
           route: string
           vehicle_number: string
         }
@@ -250,7 +229,8 @@ export type Database = {
           destination?: string
           fuel_used?: number | null
           id?: string
-          mileage?: string | null
+          item?: string | null
+          mileage?: number | null
           route?: string
           vehicle_number?: string
         }

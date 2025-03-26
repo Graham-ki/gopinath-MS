@@ -18,7 +18,7 @@ export default function Login() {
 
     try {
       // Step 1: Authenticate the user
-      const {  error: authError } = await supabase.auth.signInWithPassword({
+      const { error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -30,30 +30,41 @@ export default function Login() {
       }
 
       // Step 2: Get the session data
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-      if (sessionError) {
+      if (sessionError || !session) {
         setError("Failed to retrieve session.");
         setLoading(false);
         return;
       }
 
-      // Step 3: Extract the user ID from the session
-      const userId = sessionData.session?.user.id;
-      if (!userId) {
-        setError("User ID not found in session.");
+      // Step 3: Fetch user profile to check role and usertype
+      const { data: profile, error: profileError } = await supabase
+        .from('users')
+        .select('role, usertype')
+        .eq('id', session.user.id)
+        .single();
+
+      if (profileError || !profile) {
+        setError("Failed to fetch user profile.");
         setLoading(false);
         return;
       }
 
-      console.log("User ID:", userId); // For debugging
+      // Step 4: Check if user has required permissions
+      if (profile.role != 1 || profile.usertype != 'inventory') {
+        setError("You don't have permission to access this dashboard.");
+        setLoading(false);
+        // Optional: Sign out the user if they don't have permissions
+        await supabase.auth.signOut();
+        return;
+      }
 
-      // Step 4: Redirect to the inventory page
-      router.push("/inventory");
+      // Step 5: Redirect to the dashboard
+      router.push("/dashboard");
     } catch (err) {
       setError("An unexpected error occurred. Please try again.");
       console.error("Login error:", err);
-      setLoading(false);
     } finally {
       setLoading(false);
     }
@@ -112,7 +123,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition duration-300"
+            className={`w-full ${loading ? 'bg-blue-400' : 'bg-blue-600'} text-white p-3 rounded-lg hover:bg-blue-700 transition duration-300`}
           >
             {loading ? "Logging in..." : "Log In"}
           </button>
@@ -122,11 +133,11 @@ export default function Login() {
           <p className="text-sm text-gray-600">
             Go to{" "}
             <button
-    onClick={() => window.location.href = "/"}
-    className="text-blue-600 hover:underline"
-  >
-    Home
-  </button>
+              onClick={() => router.push("/")}
+              className="text-blue-600 hover:underline"
+            >
+              Home
+            </button>
           </p>
         </div>
       </motion.div>

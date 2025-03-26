@@ -19,13 +19,18 @@ interface ImageProps {
 
 function Image(props: ImageProps) {
   return (
-    <img
-      src={props.src}
-      alt={props.alt}
-      width={props.width}
-      height={props.height}
-      className={props.className}
-    />
+    <picture>
+      <source type="image/webp" srcSet={`${props.src}.webp`} />
+      <source type="image/jpeg" srcSet={props.src} />
+      <img
+        src={props.src}
+        alt={props.alt}
+        width={props.width}
+        height={props.height}
+        className={props.className}
+        decoding="async"
+      />
+    </picture>
   );
 }
 // Define types for the vehicle tracking entry
@@ -599,6 +604,7 @@ function DetailsModal({ entry, closeModal, refresh, openFuelUsageModal }: Detail
 // **Fuel Usage Modal**
 function FuelUsageModal({ entry, closeModal, refresh }: FuelUsageModalProps) {
   const [fuelUsed, setFuelUsed] = useState<string>();
+  const [fuelingDate, setFuelingDate] = useState<string>();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -606,12 +612,13 @@ function FuelUsageModal({ entry, closeModal, refresh }: FuelUsageModalProps) {
     // Update fuel used in the database
     const { error } = await supabase
       .from("vehicle_tracking")
-      .update({ fuel_used: fuelUsed })
+      .update({ fuel_used: fuelUsed,fuelinng_date: fuelingDate })
       .eq("id", entry.id);
 
     if (error) {
       console.error("Error updating fuel used:", error.message);
     } else {
+      alert("Fuel used updated successfully.");
       refresh();
       closeModal();
     }
@@ -620,7 +627,7 @@ function FuelUsageModal({ entry, closeModal, refresh }: FuelUsageModalProps) {
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
       <div className="bg-white text-black p-6 rounded-lg w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-4">Enter Fuel Used </h2>
+        <h2 className="text-2xl font-bold mb-4">Enter Fuel Used and date of fueling</h2>
         <form onSubmit={handleSubmit}>
           <input
             type="number"
@@ -629,6 +636,14 @@ function FuelUsageModal({ entry, closeModal, refresh }: FuelUsageModalProps) {
             value={fuelUsed}
             onChange={(e) => setFuelUsed(e.target.value)}
             required
+          />
+          <input
+            type="datetime-local"
+            className="w-full p-2 mb-3 border"
+            placeholder="Fueling Date"
+            required
+            value={fuelingDate}
+            onChange={(e) => setFuelingDate(e.target.value)}
           />
           <div className="flex justify-between">
             <button type="button" onClick={closeModal} className="bg-gray-400 px-4 py-2 rounded">

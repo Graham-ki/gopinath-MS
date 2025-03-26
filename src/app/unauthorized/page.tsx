@@ -7,7 +7,9 @@ export default function Unauthorized() {
   const handleGoHome = () => {
     router.push("/"); // Redirect to the home page
   };
-
+  const handleGoBack = () => {
+    router.push("/login"); // Redirect to the home page
+  };
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
       <div className="bg-gray-800 p-8 rounded-lg shadow-md text-center">
@@ -20,6 +22,12 @@ export default function Unauthorized() {
           className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition duration-300"
         >
           Back to Home
+        </button>
+        <button
+          onClick={handleGoBack}
+          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition duration-300 ml-2"
+        >
+          Login
         </button>
       </div>
     </div>
