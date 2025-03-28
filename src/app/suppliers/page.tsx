@@ -11,12 +11,12 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 interface Supplier {
-  id: number;
+  id?: number; // Make optional for new records
   name: string;
   contact: string;
   email?: string;
   address?: string;
-  created_at: string;
+  created_at?: string; // Will be set by database
 }
 
 const SuppliersPage = () => {
@@ -24,6 +24,7 @@ const SuppliersPage = () => {
   const [filteredSuppliers, setFilteredSuppliers] = useState<Supplier[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [operationLoading, setOperationLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentSupplier, setCurrentSupplier] = useState<Supplier | null>(null);
@@ -35,6 +36,7 @@ const SuppliersPage = () => {
     const fetchSuppliers = async () => {
       try {
         setLoading(true);
+        setError(null);
         const { data, error } = await supabase
           .from('suppliers')
           .select('*')
@@ -45,6 +47,7 @@ const SuppliersPage = () => {
         setFilteredSuppliers(data || []);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch suppliers');
+        console.error('Error fetching suppliers:', err);
       } finally {
         setLoading(false);
       }
@@ -71,41 +74,56 @@ const SuppliersPage = () => {
   // Handle form submit (create/update)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentSupplier?.name) {
-      setError('Supplier name is required');
+    if (!currentSupplier?.name || !currentSupplier?.contact) {
+      setError('Name and contact are required');
       return;
     }
 
     try {
-      setLoading(true);
+      setOperationLoading(true);
+      setError(null);
+
       if (currentSupplier.id) {
         // Update existing supplier
         const { data, error } = await supabase
           .from('suppliers')
-          .update(currentSupplier)
+          .update({
+            name: currentSupplier.name,
+            contact: currentSupplier.contact,
+            email: currentSupplier.email,
+            address: currentSupplier.address
+          })
           .eq('id', currentSupplier.id)
           .select()
           .single();
 
         if (error) throw error;
+        
         setSuppliers(suppliers.map(s => s.id === data.id ? data : s));
+        setIsModalOpen(false);
       } else {
-        // Create new supplier
+        // Create new supplier - don't include id or created_at
         const { data, error } = await supabase
           .from('suppliers')
-          .insert([currentSupplier])
+          .insert([{
+            name: currentSupplier.name,
+            contact: currentSupplier.contact,
+            email: currentSupplier.email,
+            address: currentSupplier.address
+          }])
           .select()
           .single();
 
         if (error) throw error;
+        
         setSuppliers([data, ...suppliers]);
+        setIsModalOpen(false);
       }
-      setIsModalOpen(false);
-      setCurrentSupplier(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save supplier');
+      console.error('Error saving supplier:', err);
     } finally {
-      setLoading(false);
+      setOperationLoading(false);
     }
   };
 
@@ -114,20 +132,24 @@ const SuppliersPage = () => {
     if (!supplierToDelete) return;
 
     try {
-      setLoading(true);
+      setOperationLoading(true);
+      setError(null);
+      
       const { error } = await supabase
         .from('suppliers')
         .delete()
         .eq('id', supplierToDelete);
 
       if (error) throw error;
+      
       setSuppliers(suppliers.filter(s => s.id !== supplierToDelete));
       setIsDeleteConfirmOpen(false);
       setSupplierToDelete(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete supplier');
+      console.error('Error deleting supplier:', err);
     } finally {
-      setLoading(false);
+      setOperationLoading(false);
     }
   };
 
@@ -138,7 +160,7 @@ const SuppliersPage = () => {
       'Contact': supplier.contact,
       'Email': supplier.email || '-',
       'Address': supplier.address || '-',
-      'Date Added': new Date(supplier.created_at).toLocaleDateString()
+      'Date Added': supplier.created_at ? new Date(supplier.created_at).toLocaleDateString() : '-'
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(data);
@@ -149,31 +171,32 @@ const SuppliersPage = () => {
 
   // Open modal for editing
   const openEditModal = (supplier: Supplier) => {
-    setCurrentSupplier(supplier);
+    setCurrentSupplier({...supplier});
     setIsModalOpen(true);
   };
 
   // Open modal for creating new
   const openCreateModal = () => {
     setCurrentSupplier({
-      id: 0,
       name: '',
       contact: '',
       email: '',
-      address: '',
-      created_at: new Date().toISOString()
+      address: ''
     });
     setIsModalOpen(true);
   };
 
-  if (loading && suppliers.length === 0) return <div className="flex-1 ml-16 p-6 flex items-center justify-center">
-  <div className="animate-pulse flex space-x-2 items-center mt-50">
-    <div className="h-2 w-2 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-    <div className="h-2 w-2 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-    <div className="h-2 w-2 bg-yellow-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-    <span className="ml-2 text-green-500 font-large">Suppliers Loading...</span>
-  </div>
-</div>;
+  if (loading && suppliers.length === 0) return (
+    <div className="flex-1 ml-16 p-6 flex items-center justify-center">
+      <div className="animate-pulse flex space-x-2 items-center mt-50">
+        <div className="h-2 w-2 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+        <div className="h-2 w-2 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+        <div className="h-2 w-2 bg-yellow-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+        <span className="ml-2 text-green-500 font-large">Suppliers Loading...</span>
+      </div>
+    </div>
+  );
+
   if (error) return <div className="flex-1 ml-16 p-6 text-red-500">Error: {error}</div>;
 
   return (
@@ -248,6 +271,13 @@ const SuppliersPage = () => {
           </div>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+            {error}
+          </div>
+        )}
+
         {/* Suppliers Table */}
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200">
@@ -272,7 +302,7 @@ const SuppliersPage = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-gray-500">{supplier.email || '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-gray-500">{supplier.address || '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-gray-500">
-                      {new Date(supplier.created_at).toLocaleDateString()}
+                      {supplier.created_at ? new Date(supplier.created_at).toLocaleDateString() : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <Link
@@ -289,7 +319,7 @@ const SuppliersPage = () => {
                       </button>
                       <button
                         onClick={() => {
-                          setSupplierToDelete(supplier.id);
+                          setSupplierToDelete(supplier.id || 0);
                           setIsDeleteConfirmOpen(true);
                         }}
                         className="text-red-500 hover:text-red-700"
@@ -317,6 +347,7 @@ const SuppliersPage = () => {
               <h2 className="text-xl font-semibold mb-4">
                 {currentSupplier.id ? 'Edit Supplier' : 'Add New Supplier'}
               </h2>
+              {error && <div className="mb-4 p-2 bg-red-100 text-red-700 text-sm rounded">{error}</div>}
               <form onSubmit={handleSubmit}>
                 <div className="space-y-4">
                   <div>
@@ -361,17 +392,29 @@ const SuppliersPage = () => {
                 <div className="mt-6 flex justify-end space-x-4">
                   <button
                     type="button"
-                    onClick={() => setIsModalOpen(false)}
+                    onClick={() => {
+                      setIsModalOpen(false);
+                      setError(null);
+                    }}
                     className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
+                    disabled={operationLoading}
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
-                    disabled={loading}
+                    className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center justify-center min-w-20"
+                    disabled={operationLoading}
                   >
-                    {loading ? 'Saving...' : 'Save'}
+                    {operationLoading ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Saving...
+                      </>
+                    ) : 'Save'}
                   </button>
                 </div>
               </form>
@@ -385,19 +428,32 @@ const SuppliersPage = () => {
             <div className="bg-white rounded-lg p-6 w-full max-w-md">
               <h2 className="text-xl font-semibold mb-4">Confirm Delete</h2>
               <p className="mb-6">Are you sure you want to delete this supplier? This action cannot be undone.</p>
+              {error && <div className="mb-4 p-2 bg-red-100 text-red-700 text-sm rounded">{error}</div>}
               <div className="flex justify-end space-x-4">
                 <button
-                  onClick={() => setIsDeleteConfirmOpen(false)}
+                  onClick={() => {
+                    setIsDeleteConfirmOpen(false);
+                    setError(null);
+                  }}
                   className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
+                  disabled={operationLoading}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={deleteSupplier}
-                  className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
-                  disabled={loading}
+                  className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 flex items-center justify-center min-w-20"
+                  disabled={operationLoading}
                 >
-                  {loading ? 'Deleting...' : 'Delete'}
+                  {operationLoading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Deleting...
+                    </>
+                  ) : 'Delete'}
                 </button>
               </div>
             </div>

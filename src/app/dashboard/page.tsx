@@ -217,13 +217,14 @@ const DashboardPage = () => {
 
         {/* System Logs Table */}
         <div className="bg-white rounded-lg shadow-md p-6 text-black">
-          <h2 className="text-xl font-semibold mb-4">Recent System Logs</h2>
+          <h2 className="text-xl font-semibold mb-4">Recent actions</h2>
           <div className="overflow-x-auto">
             <table className="min-w-full bg-white">
               <thead>
                 <tr className="bg-gray-100">
                   <th className="py-3 px-4 text-left">Action</th>
-                  <th className="py-3 px-4 text-left">User</th>
+                  <th className="py-3 px-4 text-left">Details</th>
+                  <th className="py-3 px-4 text-left">Created By</th>
                   <th className="py-3 px-4 text-left">Date</th>
                 </tr>
               </thead>
@@ -231,6 +232,7 @@ const DashboardPage = () => {
                 {dashboardData.systemLogs.map((log, index) => (
                   <tr key={index} className="border-b">
                     <td className="py-3 px-4 capitalize">{log.action}</td>
+                    <td className="py-3 px-4">{log.details}</td>
                     <td className="py-3 px-4">{log.created_by || 'System'}</td>
                     <td className="py-3 px-4">
                       {new Date(log.created_at).toLocaleString()}

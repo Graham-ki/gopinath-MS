@@ -188,10 +188,6 @@ const LPOPage = () => {
   const createLPO = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      if (!newLPO.lpo_number || newLPO.supplier_id === 0) {
-        throw new Error('Please fill all required fields');
-      }
-
       const { data, error } = await supabase
         .from('purchase_lpo')
         .insert([{
