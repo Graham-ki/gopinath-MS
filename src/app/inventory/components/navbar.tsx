@@ -240,7 +240,7 @@ const Navbar = () => {
           </button>
           <button
             className="px-4 py-2 bg-blue-400 hover:bg-blue-800 rounded-t-lg transition-colors duration-200"
-            onClick={() => router.push('/dashboard')}
+            onClick={() => router.push('/inventory-page')}
             aria-label="Navigate to inventory"
           >
             Inventory
