@@ -74,59 +74,69 @@ const SuppliersPage = () => {
   // Handle form submit (create/update)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentSupplier?.name || !currentSupplier?.contact) {
-      setError('Name and contact are required');
+    
+    // Validate required fields
+    if (!currentSupplier?.name?.trim() || !currentSupplier?.contact?.trim()) {
+      setError('Both name and contact are required');
       return;
     }
-
+  
     try {
       setOperationLoading(true);
       setError(null);
-
+  
+      // Trim all string fields
+      const cleanedSupplier = {
+        name: currentSupplier.name.trim(),
+        contact: currentSupplier.contact.trim(),
+        email: currentSupplier.email?.trim(),
+        address: currentSupplier.address?.trim()
+      };
+  
       if (currentSupplier.id) {
         // Update existing supplier
         const { data, error } = await supabase
           .from('suppliers')
-          .update({
-            name: currentSupplier.name,
-            contact: currentSupplier.contact,
-            email: currentSupplier.email,
-            address: currentSupplier.address
-          })
+          .update(cleanedSupplier)
           .eq('id', currentSupplier.id)
           .select()
           .single();
-
+  
         if (error) throw error;
         
+        // Optimistically update the UI
         setSuppliers(suppliers.map(s => s.id === data.id ? data : s));
-        setIsModalOpen(false);
       } else {
-        // Create new supplier - don't include id or created_at
+        // Create new supplier
         const { data, error } = await supabase
           .from('suppliers')
-          .insert([{
-            name: currentSupplier.name,
-            contact: currentSupplier.contact,
-            email: currentSupplier.email,
-            address: currentSupplier.address
-          }])
+          .insert([cleanedSupplier])
           .select()
           .single();
-
+  
         if (error) throw error;
         
-        setSuppliers([data, ...suppliers]);
-        setIsModalOpen(false);
+        // Optimistically update the UI
+        setSuppliers(prev => [data, ...prev]);
       }
+  
+      // Close modal only after successful operation
+      setIsModalOpen(false);
+      setCurrentSupplier(null);
+      
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save supplier');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save supplier';
+      setError(errorMessage);
       console.error('Error saving supplier:', err);
+      
+      // Check for specific Supabase errors
+      if (typeof err === 'object' && err !== null && 'code' in err) {
+        console.error('Supabase error code:', err.code);
+      }
     } finally {
       setOperationLoading(false);
     }
   };
-
   // Delete supplier
   const deleteSupplier = async () => {
     if (!supplierToDelete) return;
