@@ -388,7 +388,7 @@ const SuppliersPage = () => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                     <input
-                      type="email"
+                      type="text"
                       className="w-full p-2 border rounded-lg"
                       value={currentSupplier.email || ''}
                       onChange={(e) => setCurrentSupplier({...currentSupplier, email: e.target.value})}
