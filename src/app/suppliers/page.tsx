@@ -11,12 +11,12 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 interface Supplier {
-  id?: number; // Make optional for new records
+  id?: number;
   name: string;
   contact: string;
   email?: string;
   address?: string;
-  created_at?: string; // Will be set by database
+  created_at?: string;
 }
 
 const SuppliersPage = () => {
@@ -74,8 +74,10 @@ const SuppliersPage = () => {
   // Handle form submit (create/update)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentSupplier?.name || !currentSupplier?.contact) {
-      setError('Name and contact are required');
+    
+    // Validate required fields
+    if (!currentSupplier?.name?.trim() || !currentSupplier?.contact?.trim()) {
+      setError('Both name and contact are required');
       return;
     }
 
@@ -83,44 +85,49 @@ const SuppliersPage = () => {
       setOperationLoading(true);
       setError(null);
 
+      // Prepare clean data
+      const cleanData = {
+        name: currentSupplier.name.trim(),
+        contact: currentSupplier.contact.trim(),
+        email: currentSupplier.email?.trim() || null,
+        address: currentSupplier.address?.trim() || null
+      };
+
       if (currentSupplier.id) {
-        // Update existing supplier
+        // UPDATE existing supplier
         const { data, error } = await supabase
           .from('suppliers')
-          .update({
-            name: currentSupplier.name,
-            contact: currentSupplier.contact,
-            email: currentSupplier.email,
-            address: currentSupplier.address
-          })
-          .eq('id', currentSupplier.id)
+          .update(cleanData)
+          .eq('id', currentSupplier.id)  // Critical: ensures we update the correct record
           .select()
           .single();
 
         if (error) throw error;
         
-        setSuppliers(suppliers.map(s => s.id === data.id ? data : s));
-        setIsModalOpen(false);
+        // Update local state while preserving the original ID
+        setSuppliers(suppliers.map(s => 
+          s.id === currentSupplier.id ? { ...data, id: currentSupplier.id } : s
+        ));
       } else {
-        // Create new supplier - don't include id or created_at
+        // CREATE new supplier
         const { data, error } = await supabase
           .from('suppliers')
-          .insert([{
-            name: currentSupplier.name,
-            contact: currentSupplier.contact,
-            email: currentSupplier.email,
-            address: currentSupplier.address
-          }])
+          .insert([cleanData])
           .select()
           .single();
 
         if (error) throw error;
         
+        // Add new supplier to beginning of list
         setSuppliers([data, ...suppliers]);
-        setIsModalOpen(false);
       }
+
+      // Close modal on success
+      setIsModalOpen(false);
+      setCurrentSupplier(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save supplier');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save supplier';
+      setError(errorMessage);
       console.error('Error saving supplier:', err);
     } finally {
       setOperationLoading(false);
@@ -171,13 +178,21 @@ const SuppliersPage = () => {
 
   // Open modal for editing
   const openEditModal = (supplier: Supplier) => {
-    setCurrentSupplier({...supplier});
+    setCurrentSupplier({
+      id: supplier.id, // Preserve the existing ID
+      name: supplier.name,
+      contact: supplier.contact,
+      email: supplier.email,
+      address: supplier.address,
+      created_at: supplier.created_at
+    });
     setIsModalOpen(true);
   };
 
   // Open modal for creating new
   const openCreateModal = () => {
     setCurrentSupplier({
+      // No ID for new records
       name: '',
       contact: '',
       email: '',
@@ -359,7 +374,7 @@ const SuppliersPage = () => {
                       onChange={(e) => setCurrentSupplier({...currentSupplier, name: e.target.value})}
                       required
                     />
-                  </div> 
+                  </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Contact *</label>
                     <input
