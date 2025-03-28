@@ -582,6 +582,7 @@ const InventoryModule = () => {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-lg w-96">
               <h2 className="text-xl font-semibold mb-4">Add New Stock Item</h2>
+              <h6 className="text-sm text-gray-500 mb-4">Item once added cannot be changed!</h6>
               <form onSubmit={addStockItem}>
                 <div className="space-y-4">
                   <div>
@@ -878,6 +879,7 @@ const InventoryModule = () => {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-lg w-96 text-black">
               <h2 className="text-xl font-semibold mb-4">Add Stock Out Record</h2>
+              <h6 className="text-sm text-gray-500 mb-4">Item once added cannot be changed!</h6>
               <form onSubmit={addStockOutRecord}>
                 <div className="space-y-4">
                   <div>
