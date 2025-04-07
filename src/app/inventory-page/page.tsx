@@ -25,9 +25,10 @@ import {
   FiBarChart2,
   FiFile,
   FiFileText,
-  FiInfo
+  FiInfo,
+  FiArchive,
+  FiCalendar as FiCalendarIcon
 } from 'react-icons/fi';
-
 // Initialize Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -92,6 +93,10 @@ interface SystemLog {
   created_at: string;
 }
 
+interface OpeningStockItem {
+  name: string;
+  totalQuantity: number;
+}
 const InventoryModule = () => {
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
   const [stockOutRecords, setStockOutRecords] = useState<StockOutRecord[]>([]);
@@ -107,9 +112,12 @@ const InventoryModule = () => {
   const [isAddStockOutModalOpen, setIsAddStockOutModalOpen] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isOpeningStockModalOpen, setIsOpeningStockModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<StockItem | null>(null);
   const [selectedItemGroup, setSelectedItemGroup] = useState<StockItem[]>([]);
   const [receivedQuantity, setReceivedQuantity] = useState(0);
+  const [openingStockData, setOpeningStockData] = useState<OpeningStockItem[]>([]);
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
   // Form state for new stock item
   const [newStockItem, setNewStockItem] = useState<{
@@ -248,6 +256,121 @@ const InventoryModule = () => {
 
     fetchData();
   }, []);
+
+  // Calculate opening stock for a specific date
+  const calculateOpeningStock = async (date: string) => {
+    try {
+      console.log('Requested date:', date); // Debug log
+      
+      // Parse the selected date and get the previous day
+      const selectedDate = new Date(date);
+      const previousDay = new Date(selectedDate);
+      previousDay.setDate(selectedDate.getDate() - 1);
+      
+      // Format dates to YYYY-MM-DD for comparison
+      const previousDayStr = previousDay.toISOString().split('T')[0];
+      const selectedDateStr = selectedDate.toISOString().split('T')[0];
+      
+      console.log('Getting snapshots for previous day:', previousDayStr); // Debug log
+      
+      // Get snapshots from exactly the previous day
+      const { data: snapshots, error } = await supabase
+        .from('stock_snapshots')
+        .select('item_name, quantity_available, snapshot_date')
+        .gte('snapshot_date', previousDayStr)
+        .lt('snapshot_date', selectedDateStr)
+        .order('snapshot_date', { ascending: false });
+      
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+      
+      //console.log('Found snapshots:', snapshots);
+      
+      if (snapshots && snapshots.length > 0) {
+        // Group by item_name and sum quantities
+        const groupedItems: Record<string, number> = {};
+        
+        snapshots.forEach(snapshot => {
+          if (!groupedItems[snapshot.item_name]) {
+            groupedItems[snapshot.item_name] = 0;
+          }
+          groupedItems[snapshot.item_name] += snapshot.quantity_available;
+        });
+        
+        const openingStock = Object.entries(groupedItems).map(([name, totalQuantity]) => ({
+          name,
+          totalQuantity
+        }));
+        
+        //console.log('Processed opening stock:', openingStock);
+        setOpeningStockData(openingStock);
+      } else {
+        //console.log('No snapshots found for previous day');
+        alert('No stock record found for previous day');
+        setOpeningStockData([]);
+      }
+      
+      setIsOpeningStockModalOpen(true);
+    } catch (err) {
+      //console.error('Error in calculateOpeningStock:', err);
+      alert('Calculation failed. Please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to calculate opening stock');
+    }
+  };
+
+  // Create daily stock snapshot (to be called at end of day or on demand)
+  const createStockSnapshot = async () => {
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      // Check if snapshot already exists for today
+      const { data: existingSnapshot, error: checkError } = await supabase
+        .from('stock_snapshots')
+        .select('id')
+        .gte('snapshot_date', today.toISOString())
+        .lt('snapshot_date', new Date(today.getTime() + 86400000).toISOString());
+      
+      if (checkError) throw checkError;
+      
+      if (existingSnapshot && existingSnapshot.length > 0) {
+        //console.log('Snapshot already exists for today');
+        alert('Stock snapshot for today already exists');
+        return;
+      }
+      
+      // Get current stock items
+      const { data: stockData, error: stockError } = await supabase
+        .from('stock_items')
+        .select('name, quantity_available');
+      
+      if (stockError) throw stockError;
+      
+      if (stockData) {
+        // Prepare snapshot data
+        const snapshotData = stockData.map(item => ({
+          snapshot_date: today.toISOString(),
+          item_name: item.name,
+          quantity_available: item.quantity_available
+        }));
+        
+        // Insert snapshot records
+        const { error: insertError } = await supabase
+          .from('stock_snapshots')
+          .insert(snapshotData);
+        
+        if (insertError) throw insertError;
+        
+        //console.log('Stock snapshot created successfully');
+        alert('Stock snapshot created successfully');
+      }
+    } catch (err) {
+      console.error('Error creating stock snapshot:', err);
+      alert('Failed to create stock snapshot');
+    }
+  };
 
   // Group items by name and calculate total quantities
   const getSummarizedStockItems = () => {
@@ -698,6 +821,12 @@ const InventoryModule = () => {
             >
               <FiUpload className="mr-2" /> Stock Out
             </button>
+            <button
+              onClick={() => setIsOpeningStockModalOpen(true)}
+              className={`px-4 py-2 rounded-lg flex items-center bg-gray-200 text-gray-700 hover:bg-gray-300`}
+            >
+              <FiArchive className="mr-2" /> Opening Stock
+            </button>
           </div>
           <div className="flex space-x-4">
             {activeTab === 'stockIn' && (
@@ -719,6 +848,83 @@ const InventoryModule = () => {
           </div>
         </div>
 
+        {/* Opening Stock Modal */}
+        {isOpeningStockModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg w-full max-w-md text-black">
+              <div className="flex items-center mb-4">
+                <FiArchive className="text-blue-500 text-2xl mr-2" />
+                <h2 className="text-xl font-semibold">Opening Stock</h2>
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                  <FiCalendarIcon className="mr-2" /> Select Date
+                </label>
+                <input
+                  type="date"
+                  className="w-full p-2 border rounded-lg"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  max={new Date().toISOString().split('T')[0]}
+                />
+              </div>
+              <div className="mb-4 text-sm text-gray-600">
+                This shows the total quantity available for each item before the selected date.
+              </div>
+              <div className="flex justify-between mb-4">
+                <button
+                  onClick={() => calculateOpeningStock(selectedDate)}
+                  className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center"
+                >
+                  <FiSearch className="mr-2" /> Get Opening Stock
+                </button>
+                <button
+                  onClick={createStockSnapshot}
+                  className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 flex items-center"
+                >
+                  <FiCheck className="mr-2" /> Create Snapshot
+                </button>
+              </div>
+              {openingStockData.length > 0 ? (
+                <div className="overflow-y-auto max-h-96">
+                  <table className="min-w-full bg-white">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th className="py-3 px-4 text-left">
+                          <FiPackage className="mr-2" /> Item Name
+                        </th>
+                        <th className="py-3 px-4 text-left">
+                          <FiBarChart2 className="mr-2" /> Total Quantity
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {openingStockData.map((item) => (
+                        <tr key={item.name} className="border-b hover:bg-gray-50">
+                          <td className="py-3 px-4">{item.name}</td>
+                          <td className="py-3 px-4 font-medium">{item.totalQuantity}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  No opening stock data available for the selected date.
+                </div>
+              )}
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() => setIsOpeningStockModalOpen(false)}
+                  className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 flex items-center"
+                >
+                  <FiX className="mr-2" /> Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Stock In List */}
         {activeTab === 'stockIn' && (
           <div className="bg-white rounded-lg shadow-md p-6 mb-8 text-black">
@@ -735,7 +941,7 @@ const InventoryModule = () => {
                       <FiPackage className="mr-2" /> Name
                     </th>
                     <th className="py-3 px-4 text-left flex items-center">
-                      <FiBarChart2 className="mr-2" /> Opening Stock
+                      <FiBarChart2 className="mr-2" /> Quantity Available
                     </th>
                     <th className="py-3 px-4 text-left">Actions</th>
                   </tr>

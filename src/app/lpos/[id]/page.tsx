@@ -156,6 +156,7 @@ export default function LPODetail() {
                 <th>Quantity</th>
                 <th>Unit Price</th>
                 <th>Total</th>
+                <th>Order date</th>
               </tr>
             </thead>
             <tbody>
@@ -165,6 +166,7 @@ export default function LPODetail() {
                   <td>${item.quantity}</td>
                   <td>UGX ${item.cost.toLocaleString()}</td>
                   <td>UGX ${(item.cost * item.quantity).toLocaleString()}</td>
+                  <td>${new Date(item.created_at || '').toLocaleDateString()}</td>
                 </tr>
               `).join('')}
             </tbody>
