@@ -11,6 +11,7 @@ import {
   CubeIcon,
   ClockIcon,
 } from '@heroicons/react/24/outline';
+import { FiPackage } from 'react-icons/fi';
 
 // Initialize Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -173,14 +174,19 @@ const DashboardPage = () => {
 
   if (loading) {
     return (
-      <div className="flex-1 ml-16 p-6 flex items-center justify-center">
-        <div className="animate-pulse flex space-x-2 items-center mt-50">
-          <div className="h-2 w-2 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-          <div className="h-2 w-2 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-          <div className="h-2 w-2 bg-yellow-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-          <span className="ml-2 text-green-500 font-large">Loading...</span>
-        </div>
-      </div>
+      <div className="flex-1 ml-16 p-6 flex flex-col items-center justify-center min-h-screen">
+            <div className="flex flex-col items-center space-y-4">
+              <div className="flex space-x-2">
+                <div className="h-3 w-3 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                <div className="h-3 w-3 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                <div className="h-3 w-3 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+              </div>
+              <div className="flex items-center space-x-2 text-gray-600">
+                <FiPackage className="animate-spin" />
+                <span>Dashboard Loading...</span>
+              </div>
+            </div>
+          </div>
     );
   }
 
