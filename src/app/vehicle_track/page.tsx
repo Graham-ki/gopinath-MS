@@ -440,6 +440,75 @@ function VehicleModal({ entry, closeModal, refresh }: VehicleModalProps) {
       mileage: 0,
     }
   );
+  const [vehicleSuggestions, setVehicleSuggestions] = useState<string[]>([]);
+  const [destinationSuggestions, setDestinationSuggestions] = useState<string[]>([]);
+  const [showVehicleSuggestions, setShowVehicleSuggestions] = useState(false);
+  const [showDestinationSuggestions, setShowDestinationSuggestions] = useState(false);
+
+  // Fetch unique vehicle numbers and destinations from the database
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      const { data: vehicles, error: vehicleError } = await supabase
+        .from("vehicle_tracking")
+        .select("vehicle_number")
+        .order("vehicle_number", { ascending: true });
+
+      const { data: destinations, error: destinationError } = await supabase
+        .from("vehicle_tracking")
+        .select("destination, route")
+        .order("destination", { ascending: true });
+
+      if (!vehicleError && vehicles) {
+        const uniqueVehicles = [...new Set(vehicles.map(v => v.vehicle_number))];
+        setVehicleSuggestions(uniqueVehicles);
+      }
+
+      if (!destinationError && destinations) {
+        const uniqueDestinations = [...new Set(destinations.map(d => d.destination))];
+        setDestinationSuggestions(uniqueDestinations);
+      }
+    };
+
+    fetchSuggestions();
+  }, []);
+
+  // Handle vehicle number input change
+  const handleVehicleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setFormData({ ...formData, vehicle_number: value });
+    setShowVehicleSuggestions(value.length > 0);
+  };
+
+  // Handle destination input change
+  const handleDestinationChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setFormData({ ...formData, destination: value });
+    setShowDestinationSuggestions(value.length > 0);
+  };
+
+  // Select a vehicle suggestion
+  const selectVehicleSuggestion = (vehicle: string) => {
+    setFormData({ ...formData, vehicle_number: vehicle });
+    setShowVehicleSuggestions(false);
+  };
+
+  // Select a destination suggestion and auto-populate route if available
+  const selectDestinationSuggestion = async (destination: string) => {
+    setFormData({ ...formData, destination });
+    setShowDestinationSuggestions(false);
+    
+    // Fetch the most recent route for this destination
+    const { data, error } = await supabase
+      .from("vehicle_tracking")
+      .select("route")
+      .eq("destination", destination)
+      .order("departure_time", { ascending: false })
+      .limit(1);
+
+    if (!error && data && data[0]?.route) {
+      setFormData(prev => ({ ...prev, route: data[0].route }));
+    }
+  };
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -461,14 +530,32 @@ function VehicleModal({ entry, closeModal, refresh }: VehicleModalProps) {
       <div className="bg-white text-black p-6 rounded-lg w-full max-w-md">
         <h2 className="text-2xl font-bold mb-4">{entry ? "Edit Vehicle Entry" : "Add Vehicle Entry"}</h2>
         <form onSubmit={handleSubmit}>
-          <input
-            type="text"
-            placeholder="Vehicle Number"
-            className="w-full p-2 mb-3 border"
-            value={formData.vehicle_number}
-            onChange={(e) => setFormData({ ...formData, vehicle_number: e.target.value })}
-            required
-          />
+          <div className="relative mb-3">
+            <input
+              type="text"
+              placeholder="Vehicle Number"
+              className="w-full p-2 border"
+              value={formData.vehicle_number}
+              onChange={handleVehicleNumberChange}
+              required
+            />
+            {showVehicleSuggestions && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-auto">
+                {vehicleSuggestions
+                  .filter(v => v.toLowerCase().includes(formData.vehicle_number.toLowerCase()))
+                  .map((vehicle, index) => (
+                    <div
+                      key={index}
+                      className="p-2 hover:bg-gray-100 cursor-pointer"
+                      onClick={() => selectVehicleSuggestion(vehicle)}
+                    >
+                      {vehicle}
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+          
           <input
             type="datetime-local"
             className="w-full p-2 mb-3 border"
@@ -476,14 +563,33 @@ function VehicleModal({ entry, closeModal, refresh }: VehicleModalProps) {
             onChange={(e) => setFormData({ ...formData, departure_time: e.target.value })}
             required
           />
-          <input
-            type="text"
-            placeholder="Destination (exact point of delivery)"
-            className="w-full p-2 mb-3 border"
-            value={formData.destination}
-            onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
-            required
-          />
+          
+          <div className="relative mb-3">
+            <input
+              type="text"
+              placeholder="Destination (exact point of delivery)"
+              className="w-full p-2 border"
+              value={formData.destination}
+              onChange={handleDestinationChange}
+              required
+            />
+            {showDestinationSuggestions && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-auto">
+                {destinationSuggestions
+                  .filter(d => d.toLowerCase().includes(formData.destination.toLowerCase()))
+                  .map((destination, index) => (
+                    <div
+                      key={index}
+                      className="p-2 hover:bg-gray-100 cursor-pointer"
+                      onClick={() => selectDestinationSuggestion(destination)}
+                    >
+                      {destination}
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+          
           <input
             type="text"
             placeholder="Package/items"
@@ -492,6 +598,7 @@ function VehicleModal({ entry, closeModal, refresh }: VehicleModalProps) {
             onChange={(e) => setFormData({ ...formData, item: e.target.value })}
             required
           />
+          
           <input
             type="text"
             placeholder="Route"
@@ -500,6 +607,7 @@ function VehicleModal({ entry, closeModal, refresh }: VehicleModalProps) {
             onChange={(e) => setFormData({ ...formData, route: e.target.value })}
             required
           />
+          
           <div className="flex justify-between">
             <button type="button" onClick={closeModal} className="bg-gray-400 px-4 py-2 rounded">
               Cancel
