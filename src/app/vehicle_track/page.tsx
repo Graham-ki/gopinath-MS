@@ -100,6 +100,13 @@ export default function VehicleTracking() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [showNotice, setShowNotice] = useState<boolean>(true);
 
+  //format date function
+  function formatDateSafe(dateString: string | number | Date, fallback = "Enroute") {
+  if (!dateString) return fallback;
+  const date = new Date(dateString);
+  return isNaN(date.getTime()) ? fallback : format(date, "MMM dd, yyyy HH:mm");
+}
+
   // Check if the user is logged in and has the correct role
   useEffect(() => {
     const checkAuth = async () => {
@@ -372,9 +379,7 @@ export default function VehicleTracking() {
                   <td className="p-3">{entry.item}</td>
                   <td className="p-3">{entry.route}</td>
                   <td className="p-3">
-                    {entry.arrival_time
-                      ? format(new Date(entry.arrival_time), "MMM dd, yyyy HH:mm")
-                      : "Enroute"}
+                    {formatDateSafe(entry.arrival_time ?? "")}
                   </td>
                   <td className="p-3">{entry.confirmation_status ? "Confirmed" : "Pending"}</td>
                   <td className="p-3">{entry.fuel_used} Liters</td>
