@@ -371,7 +371,11 @@ export default function VehicleTracking() {
                   <td className="p-3">{entry.destination}</td>
                   <td className="p-3">{entry.item}</td>
                   <td className="p-3">{entry.route}</td>
-                  <td className="p-3">{entry.arrival_time}</td>
+                  <td className="p-3">
+                    {entry.arrival_time
+                      ? format(new Date(entry.arrival_time), "MMM dd, yyyy HH:mm")
+                      : "Enroute"}
+                  </td>
                   <td className="p-3">{entry.confirmation_status ? "Confirmed" : "Pending"}</td>
                   <td className="p-3">{entry.fuel_used} Liters</td>
                   <td className="p-3">{entry.mileage} KM</td>
