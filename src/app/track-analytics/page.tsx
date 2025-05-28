@@ -32,7 +32,7 @@ export default function WelcomePage() {
             </p>
             
             <Link href="/analytics-dashboard" className="flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-6 rounded-lg transition duration-200 w-full md:w-auto">
-              Get Started
+              <span className="text-lg">Go to Analytics Dashboard</span>
               <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
           </div>
