@@ -213,7 +213,9 @@ export default function VehicleTracking() {
       "Destination": entry.destination,
       "Package": entry.item,
       "Route": entry.route,
-      "Arrival Time": formatDateSafe(entry.arrival_time),
+      "Arrival Time": entry.arrival_time 
+  ? format(new Date(entry.arrival_time), "MMM dd, yyyy HH:mm") 
+  : "Enroute",
       "Status": entry.confirmation_status ? "Confirmed" : "Pending",
       "Fuel Used": entry.fuel_used + " Liters",
       "Mileage": entry.mileage + " KM",
