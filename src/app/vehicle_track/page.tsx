@@ -79,10 +79,14 @@ export default function VehicleTracking() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [showNotice, setShowNotice] = useState<boolean>(true);
 
-  function formatDateSafe(dateString: string | number | Date, fallback = "Enroute") {
+  function formatDateSafe(dateString: string | number | Date | undefined, fallback = "Enroute") {
     if (!dateString) return fallback;
-    const date = new Date(dateString);
-    return isNaN(date.getTime()) ? fallback : format(date, "MMM dd, yyyy HH:mm");
+    try {
+      const date = new Date(dateString);
+      return isNaN(date.getTime()) ? fallback : format(date, "MMM dd, yyyy HH:mm");
+    } catch {
+      return fallback;
+    }
   }
 
   useEffect(() => {
@@ -389,9 +393,7 @@ export default function VehicleTracking() {
                   <td className="p-3">{entry.destination}</td>
                   <td className="p-3">{entry.item}</td>
                   <td className="p-3">{entry.route}</td>
-                  <td className="p-3">
-                    {formatDateSafe(entry.arrival_time)}
-                  </td>
+                  <td className="p-3">{formatDateSafe(entry.arrival_time)}</td>
                   <td className="p-3">{entry.confirmation_status ? "Confirmed" : "Pending"}</td>
                   <td className="p-3">{entry.fuel_used} Liters</td>
                   <td className="p-3">{entry.mileage} KM</td>
