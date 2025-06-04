@@ -8,31 +8,6 @@ import Papa from "papaparse";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 
-interface ImageProps {
-  src: string;
-  alt: string;
-  width: number;
-  height: number;
-  className: string;
-}
-
-function Image(props: ImageProps) {
-  return (
-    <picture>
-      <source type="image/webp" srcSet={`${props.src}.webp`} />
-      <source type="image/jpeg" srcSet={props.src} />
-      <img
-        src={props.src}
-        alt={props.alt}
-        width={props.width}
-        height={props.height}
-        className={props.className}
-        decoding="async"
-      />
-    </picture>
-  );
-}
-
 interface VehicleEntry {
   id?: string;
   vehicle_number: string;
@@ -213,9 +188,7 @@ export default function VehicleTracking() {
       "Destination": entry.destination,
       "Package": entry.item,
       "Route": entry.route,
-      "Arrival Time": entry.arrival_time 
-  ? format(new Date(entry.arrival_time), "MMM dd, yyyy HH:mm") 
-  : "Enroute",
+      "Arrival Time": formatDateSafe(entry.arrival_time),
       "Status": entry.confirmation_status ? "Confirmed" : "Pending",
       "Fuel Used": entry.fuel_used + " Liters",
       "Mileage": entry.mileage + " KM",
@@ -253,9 +226,7 @@ export default function VehicleTracking() {
       format(new Date(entry.departure_time), "MMM dd, yyyy HH:mm"),
       entry.destination,
       entry.route,
-      entry.arrival_time 
-  ? format(new Date(entry.arrival_time), "MMM dd, yyyy HH:mm") 
-  : "Enroute",
+      formatDateSafe(entry.arrival_time),
       entry.confirmation_status ? "Confirmed" : "Pending",
       entry.fuel_used + " L",
     ]);
@@ -266,15 +237,7 @@ export default function VehicleTracking() {
       startY: timeFilter === "All" ? 20 : 40,
     });
 
-    let fileName = "vehicle_entries";
-    if (timeFilter !== "All") {
-      fileName += `_${timeFilter.toLowerCase().replace(" ", "_")}`;
-    }
-    if (timeFilter === "Custom Range") {
-      fileName += `_${format(customRange.start, "yyyyMMdd")}-${format(customRange.end, "yyyyMMdd")}`;
-    }
-    
-    doc.save(`${fileName}.pdf`);
+    doc.save(`vehicle_entries_${timeFilter.toLowerCase().replace(" ", "_")}.pdf`);
   };
 
   const handleLogout = async () => {
@@ -427,9 +390,7 @@ export default function VehicleTracking() {
                   <td className="p-3">{entry.item}</td>
                   <td className="p-3">{entry.route}</td>
                   <td className="p-3">
-                    {entry.arrival_time 
-  ? format(new Date(entry.arrival_time), "MMM dd, yyyy HH:mm") 
-  : "Enroute"
+                    {formatDateSafe(entry.arrival_time)}
                   </td>
                   <td className="p-3">{entry.confirmation_status ? "Confirmed" : "Pending"}</td>
                   <td className="p-3">{entry.fuel_used} Liters</td>
@@ -686,11 +647,8 @@ function DetailsModal({ entry, closeModal, refresh, openFuelUsageModal }: Detail
       if (error) {
         console.error("Error fetching proof:", error.message);
       } else if (!data) {
-        console.log("No proof found for this entry.");
-        console.log(entry.id);
         setProof(null);
       } else {
-        console.log("Proof fetched successfully:");
         setProof(data);
       }
     };
@@ -719,7 +677,7 @@ function DetailsModal({ entry, closeModal, refresh, openFuelUsageModal }: Detail
         <h2 className="text-2xl font-bold mb-4">Travel Details</h2>
         {proof && (
           <div className="mb-4">
-            <Image
+            <img
               src={proof.proof_url}
               alt="Travel Proof"
               width={200}
