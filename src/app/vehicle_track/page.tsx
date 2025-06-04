@@ -253,7 +253,9 @@ export default function VehicleTracking() {
       format(new Date(entry.departure_time), "MMM dd, yyyy HH:mm"),
       entry.destination,
       entry.route,
-      formatDateSafe(entry.arrival_time),
+      entry.arrival_time 
+  ? format(new Date(entry.arrival_time), "MMM dd, yyyy HH:mm") 
+  : "Enroute",
       entry.confirmation_status ? "Confirmed" : "Pending",
       entry.fuel_used + " L",
     ]);
