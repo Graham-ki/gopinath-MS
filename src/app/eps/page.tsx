@@ -176,8 +176,8 @@ export default function AddOffences() {
       status: offence.status,
       offence: offence.offence,
       charge: offence.charge.toString(),
-      driver: (offence as any).driver || '',
-      location: (offence as any).location || ''
+      driver: offence.driver || '',
+      location: offence.location || ''
     })
     setEditingId(offence.id)
   }
