@@ -16,7 +16,8 @@ interface VehicleOffence {
   status: 'Cleared' | 'Pending'
   driver?: string
   location?: string
-  
+  ticket_number?: string
+  prn_number?: string
 }
 
 interface GroupedOffences {
@@ -341,6 +342,8 @@ export default function Reports() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Charge</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Driver</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Location</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Ticket Number</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">PRN Number</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Status</th>
                     </tr>
                   </thead>
@@ -361,6 +364,12 @@ export default function Reports() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-gray-600">
                           {offence.location || 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-gray-600">
+                          {offence.ticket_number || 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-gray-600">
+                          {offence.prn_number || 'N/A'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <StatusBadge status={offence.status} />

@@ -12,6 +12,8 @@ type Offence = {
   charge: number
   driver: string
   location: string
+  ticket_number?: string
+  prn_number?: string
 }
 
 type GroupedOffences = {
@@ -27,7 +29,9 @@ export default function AddOffences() {
     offence: '',
     charge: '',
     driver: '',
-    location: ''
+    location: '',
+    ticket_number: '',
+    prn_number: ''
   })
   const [editingId, setEditingId] = useState<number | null>(null)
   const [groupedOffences, setGroupedOffences] = useState<GroupedOffences>({})
@@ -36,14 +40,18 @@ export default function AddOffences() {
     offences: [] as string[],
     charges: [] as number[],
     drivers: [] as string[],
-    locations: [] as string[]
+    locations: [] as string[],
+    ticketNumbers: [] as string[],
+    prnNumbers: [] as string[]
   })
   const [showSuggestions, setShowSuggestions] = useState({
     vehicleNumber: false,
     offence: false,
     charge: false,
     driver: false,
-    location: false
+    location: false,
+    ticketNumber: false,
+    prnNumber: false
   })
 
   useEffect(() => {
@@ -72,7 +80,9 @@ export default function AddOffences() {
       offences: uniqueOffences,
       charges: uniqueCharges,
       drivers: uniqueDrivers,
-      locations: uniqueLocations
+      locations: uniqueLocations,
+      ticketNumbers: [...new Set(offences.map(o => o.ticket_number).filter((t): t is string => typeof t === 'string'))],
+      prnNumbers: [...new Set(offences.map(o => o.prn_number).filter((p): p is string => typeof p === 'string'))]
     })
   }, [offences])
 
@@ -120,6 +130,7 @@ export default function AddOffences() {
         location: value.length > 0
       })
     }
+    
   }
 
   const handleSuggestionClick = (
@@ -135,7 +146,9 @@ export default function AddOffences() {
       offence: false,
       charge: false,
       driver: false,
-      location: false
+      location: false,
+      ticketNumber: false,
+      prnNumber: false
     })
   }
 
@@ -175,7 +188,7 @@ export default function AddOffences() {
       if (error) {
         console.error('Error updating offence:', error)
       } else {
-        setFormData({ vehicle_number: '', date: '', status: 'Pending', offence: '', charge: '', driver: '', location: '' })
+        setFormData({ vehicle_number: '', date: '', status: 'Pending', offence: '', charge: '', driver: '', location: '', ticket_number: '', prn_number: '' })
         setEditingId(null)
         fetchOffences()
       }
@@ -189,7 +202,7 @@ export default function AddOffences() {
       if (error) {
         console.error('Error adding offence:', error)
       } else {
-        setFormData({ vehicle_number: '', date: '', status: 'Pending', offence: '', charge: '', driver: '', location: '' })
+        setFormData({ vehicle_number: '', date: '', status: 'Pending', offence: '', charge: '', driver: '', location: '', ticket_number: '', prn_number: '' })
         fetchOffences()
       }
     }
@@ -198,7 +211,9 @@ export default function AddOffences() {
       offence: false,
       charge: false,
       driver: false,
-      location: false
+      location: false,
+      ticketNumber: false,
+      prnNumber: false
     })
   }
   const handleEdit = (offence: Offence) => {
@@ -209,7 +224,9 @@ export default function AddOffences() {
       offence: offence.offence,
       charge: offence.charge.toString(),
       driver: offence.driver || '',
-      location: offence.location || ''
+      location: offence.location || '',
+        ticket_number: offence.ticket_number || '',
+        prn_number: offence.prn_number || ''
     })
     setEditingId(offence.id)
   }
@@ -383,6 +400,28 @@ export default function AddOffences() {
               </div>
             )}
           </div>
+            <div className="relative">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Ticket Number</label>
+                <input
+                type="text"
+                name="ticket_number"
+                value={formData.ticket_number}
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded-md text-black"
+                autoComplete="off"
+                />
+            </div>
+            <div className="relative">
+                <label className="block text-sm font-medium text-gray-700 mb-1">PRN Number</label>
+                <input
+                type="text"
+                name="prn_number"
+                value={formData.prn_number}
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded-md text-black"
+                autoComplete="off"
+                />    
+            </div>
           <div className="md:col-span-2 lg:col-span-4 flex justify-end">
             <button
               type="submit"
