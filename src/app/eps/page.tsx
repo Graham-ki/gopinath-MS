@@ -34,12 +34,16 @@ export default function AddOffences() {
   const [suggestions, setSuggestions] = useState({
     vehicleNumbers: [] as string[],
     offences: [] as string[],
-    charges: [] as number[]
+    charges: [] as number[],
+    drivers: [] as string[],
+    locations: [] as string[]
   })
   const [showSuggestions, setShowSuggestions] = useState({
     vehicleNumber: false,
     offence: false,
-    charge: false
+    charge: false,
+    driver: false,
+    location: false
   })
 
   useEffect(() => {
@@ -60,11 +64,15 @@ export default function AddOffences() {
     const uniqueVehicleNumbers = [...new Set(offences.map(o => o.vehicle_number))]
     const uniqueOffences = [...new Set(offences.map(o => o.offence))]
     const uniqueCharges = [...new Set(offences.map(o => o.charge))]
+    const uniqueDrivers = [...new Set(offences.map(o => o.driver))]
+    const uniqueLocations = [...new Set(offences.map(o => o.location))]
 
     setSuggestions({
       vehicleNumbers: uniqueVehicleNumbers,
       offences: uniqueOffences,
-      charges: uniqueCharges
+      charges: uniqueCharges,
+      drivers: uniqueDrivers,
+      locations: uniqueLocations
     })
   }, [offences])
 
@@ -101,9 +109,23 @@ export default function AddOffences() {
         charge: value.length > 0
       })
     }
+    else if (name === 'driver') {
+      setShowSuggestions({
+        ...showSuggestions,
+        driver: value.length > 0
+      })
+    } else if (name === 'location') {
+      setShowSuggestions({
+        ...showSuggestions,
+        location: value.length > 0
+      })
+    }
   }
 
-  const handleSuggestionClick = (field: 'vehicle_number' | 'offence' | 'charge', value: string | number) => {
+  const handleSuggestionClick = (
+    field: 'vehicle_number' | 'offence' | 'charge' | 'driver' | 'location',
+    value: string | number
+  ) => {
     setFormData({
       ...formData,
       [field]: value.toString()
@@ -111,7 +133,9 @@ export default function AddOffences() {
     setShowSuggestions({
       vehicleNumber: false,
       offence: false,
-      charge: false
+      charge: false,
+      driver: false,
+      location: false
     })
   }
 
@@ -124,6 +148,12 @@ export default function AddOffences() {
     ),
     charges: suggestions.charges.filter(c =>
       c.toString().includes(formData.charge)
+    ),
+    drivers: suggestions.drivers.filter(driver =>
+      driver.toLowerCase().includes(formData.driver.toLowerCase())
+    ),
+    locations: suggestions.locations.filter(location =>
+      location.toLowerCase().includes(formData.location.toLowerCase())
     )
   }
 
@@ -166,7 +196,9 @@ export default function AddOffences() {
     setShowSuggestions({
       vehicleNumber: false,
       offence: false,
-      charge: false
+      charge: false,
+      driver: false,
+      location: false
     })
   }
   const handleEdit = (offence: Offence) => {
@@ -313,6 +345,19 @@ export default function AddOffences() {
               className="w-full p-2 border border-gray-300 rounded-md text-black"
               required
             />
+            {showSuggestions.driver && filteredSuggestions.drivers.length > 0 && (
+              <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                {filteredSuggestions.drivers.map((driver, index) => (
+                  <div
+                    key={index}
+                    className="p-2 hover:bg-gray-100 cursor-pointer text-black"
+                    onClick={() => handleSuggestionClick('driver', driver)}
+                  >
+                    {driver}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
@@ -324,6 +369,19 @@ export default function AddOffences() {
               className="w-full p-2 border border-gray-300 rounded-md text-black"
               required
             />
+            {showSuggestions.location && filteredSuggestions.locations.length > 0 && (
+              <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                {filteredSuggestions.locations.map((location, index) => (
+                  <div
+                    key={index}
+                    className="p-2 hover:bg-gray-100 cursor-pointer text-black"
+                    onClick={() => handleSuggestionClick('location', location)}
+                  >
+                    {location}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           <div className="md:col-span-2 lg:col-span-4 flex justify-end">
             <button
