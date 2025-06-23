@@ -10,6 +10,8 @@ type Offence = {
   status: string
   offence: string
   charge: number
+  driver: string
+  location: string
 }
 
 type GroupedOffences = {
@@ -23,7 +25,9 @@ export default function AddOffences() {
     date: '',
     status: 'Pending',
     offence: '',
-    charge: ''
+    charge: '',
+    driver: '',
+    location: ''
   })
   const [editingId, setEditingId] = useState<number | null>(null)
   const [groupedOffences, setGroupedOffences] = useState<GroupedOffences>({})
@@ -138,10 +142,11 @@ export default function AddOffences() {
           charge: Number(formData.charge)
         })
         .eq('id', editingId)
-      if (error) console.error('Error updating offence:', error)
-      else {
+      if (error) {
+        console.error('Error updating offence:', error)
+      } else {
+        setFormData({ vehicle_number: '', date: '', status: 'Pending', offence: '', charge: '', driver: '', location: '' })
         setEditingId(null)
-        setFormData({ vehicle_number: '', date: '', status: 'Pending', offence: '', charge: '' })
         fetchOffences()
       }
     } else {
@@ -151,9 +156,10 @@ export default function AddOffences() {
           ...formData,
           charge: Number(formData.charge)
         }])
-      if (error) console.error('Error adding offence:', error)
-      else {
-        setFormData({ vehicle_number: '', date: '', status: 'Pending', offence: '', charge: '' })
+      if (error) {
+        console.error('Error adding offence:', error)
+      } else {
+        setFormData({ vehicle_number: '', date: '', status: 'Pending', offence: '', charge: '', driver: '', location: '' })
         fetchOffences()
       }
     }
@@ -163,14 +169,15 @@ export default function AddOffences() {
       charge: false
     })
   }
-
-  const handleEdit = (offence: Offence): void => {
+  const handleEdit = (offence: Offence) => {
     setFormData({
       vehicle_number: offence.vehicle_number,
       date: offence.date,
       status: offence.status,
       offence: offence.offence,
-      charge: offence.charge.toString()
+      charge: offence.charge.toString(),
+      driver: (offence as any).driver || '',
+      location: (offence as any).location || ''
     })
     setEditingId(offence.id)
   }
@@ -296,7 +303,28 @@ export default function AddOffences() {
               </div>
             )}
           </div>
-          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Driver</label>
+            <input
+              type="text"
+              name="driver"
+              value={formData.driver}
+              onChange={handleChange}
+              className="w-full p-2 border border-gray-300 rounded-md text-black"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+            <input
+              type="text"
+              name="location"
+              value={formData.location}
+              onChange={handleChange}
+              className="w-full p-2 border border-gray-300 rounded-md text-black"
+              required
+            />
+          </div>
           <div className="md:col-span-2 lg:col-span-4 flex justify-end">
             <button
               type="submit"
@@ -323,6 +351,8 @@ export default function AddOffences() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Offence</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Charge</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Driver</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
@@ -341,6 +371,8 @@ export default function AddOffences() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-gray-600">{offence.offence}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-gray-600">UGX {offence.charge}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-gray-600">{offence.driver}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-gray-600">{offence.location}</td>
                         <td className="px-6 py-4 whitespace-nowrap flex space-x-2">
                           <button
                             onClick={() => handleEdit(offence)}
